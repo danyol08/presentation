@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>Fixed Asset Manager — Barcotech Philippines, Inc.</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --deep-blue: #102152;
+    --light-blue: #0f72ce;
+    --green: #719603;
+    --white: #ffffff;
+    --gray-bg: #F4F6FA;
+    --gray-border: #dee2e6;
+    --font: 'Century Gothic', 'Trebuchet MS', 'Gill Sans', Arial, sans-serif;
+  }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--deep-blue);
+    font-family: var(--font);
+  }
+  #deck {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ALL SLIDES HIDDEN BY DEFAULT */
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* ONLY ACTIVE SLIDE SHOWN */
+  .slide.active {
+    display: flex;
+  }
+
+  /* NAV BUTTONS */
+  .nav-btn {
+    position: fixed;
+    top: 50%; transform: translateY(-50%);
+    z-index: 9999;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.35);
+    background: rgba(16,33,82,0.55);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .nav-btn:hover { background: var(--light-blue); border-color: var(--light-blue); }
+  #prev { left: 16px; }
+  #next { right: 16px; }
+
+  #counter {
+    position: fixed;
+    bottom: 18px; right: 24px;
+    z-index: 9999;
+    font-family: var(--font);
+    font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    background: rgba(16,33,82,0.6);
+    padding: 4px 14px; border-radius: 20px;
+  }
+  #fs-hint {
+    position: fixed;
+    bottom: 18px; left: 50%; transform: translateX(-50%);
+    z-index: 9999;
+    font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em;
+  }
+
+  /* SLIDE BACKGROUNDS */
+  .slide-gray { background: var(--gray-bg); }
+  .slide-dark { background: var(--deep-blue); }
+
+  /* SLIDE HEADER */
+  .slide-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 28px 60px 22px 60px; flex-shrink: 0;
+  }
+  .slide-header-left { display: flex; align-items: center; gap: 16px; }
+  .header-bar { width: 4px; height: 36px; background: var(--deep-blue); border-radius: 2px; }
+  .slide-title { font-size: 22px; font-weight: 700; color: var(--deep-blue); letter-spacing: 0.06em; text-transform: uppercase; }
+  .header-wordmark { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: #c0c8d8; text-transform: uppercase; }
+
+  .slide-body { flex: 1; padding: 0 60px 40px 60px; display: flex; gap: 40px; overflow: hidden; }
+
+  /* BROWSER MOCKUP */
+  .browser-frame {
+    background: #fff; border: 1px solid var(--gray-border); border-radius: 12px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 4px 24px rgba(16,33,82,0.10); flex-shrink: 0;
+  }
+  .browser-bar {
+    height: 36px; background: #f1f3f5; display: flex; align-items: center;
+    padding: 0 12px; gap: 8px; flex-shrink: 0; border-bottom: 1px solid #e0e3e7;
+  }
+  .browser-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; } .dot-yellow { background: #febc2e; } .dot-green { background: #28c840; }
+  .browser-url {
+    flex: 1; height: 22px; background: #e9ecef; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #6c757d; margin: 0 8px;
+  }
+  .browser-content { flex: 1; overflow: hidden; position: relative; background: #f8f9fa; }
+  .browser-content img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
+
+  /* IMAGE PLACEHOLDER */
+  .img-placeholder {
+    width: 100%; height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: #eef1f7;
+    border: 2px dashed #b0bcd4; color: #7a8aaa; gap: 10px; text-align: center; padding: 20px;
+  }
+  .img-placeholder .ph-icon { font-size: 36px; opacity: 0.5; }
+  .img-placeholder .ph-label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .img-placeholder .ph-sub { font-size: 11px; opacity: 0.7; }
+
+  /* FEATURE COLUMN */
+  .feature-col { display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+  .feature-col h3 { font-size: 18px; font-weight: 700; color: var(--deep-blue); letter-spacing: 0.04em; margin-bottom: 6px; line-height: 1.3; }
+  .feat { display: flex; align-items: flex-start; gap: 12px; font-size: 13.5px; color: #3a4a6b; line-height: 1.5; }
+  .feat-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--light-blue); margin-top: 6px; flex-shrink: 0; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .badge-good { background: #719603; color: #fff; }
+  .badge-fair { background: #f9a825; color: #333; }
+  .badge-damaged { background: #c62828; color: #fff; }
+
+  /* ── SLIDE 1 HERO ── */
+  #slide-1 { background: var(--deep-blue); align-items: center; justify-content: center; position: relative; }
+  #slide-1 .hero-logo-area { position: absolute; top: 32px; left: 48px; }
+  #slide-1::before { content: ''; position: absolute; bottom: -80px; right: -80px; width: 520px; height: 520px; background: var(--light-blue); opacity: 0.12; transform: rotate(35deg); border-radius: 40px; }
+  #slide-1::after  { content: ''; position: absolute; bottom: -120px; right: -40px; width: 340px; height: 340px; background: var(--green); opacity: 0.08; transform: rotate(20deg); border-radius: 30px; }
+  .hero-center { text-align: center; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .hero-title { font-size: 68px; font-weight: 700; color: #fff; letter-spacing: 0.06em; line-height: 1.05; text-transform: uppercase; }
+  .hero-title span { color: var(--light-blue); }
+  .hero-subtitle { font-size: 22px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.12em; text-transform: uppercase; }
+  .hero-tag { font-size: 13px; color: rgba(255,255,255,0.45); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 8px; }
+  .hero-hint { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; }
+  .hero-accent-line { width: 80px; height: 3px; background: linear-gradient(90deg, var(--light-blue), var(--green)); border-radius: 2px; margin: 8px auto 0; }
+
+  /* ── SLIDE 2 CHALLENGE ── */
+  .challenge-inner { display: grid; grid-template-columns: 1fr 1.6fr; gap: 48px; align-items: center; height: 100%; }
+  .challenge-headline { font-size: 28px; font-weight: 700; color: var(--deep-blue); line-height: 1.3; }
+  .challenge-headline em { color: var(--light-blue); font-style: normal; }
+  .problem-cards { display: flex; flex-direction: column; gap: 12px; }
+  .problem-card { display: flex; align-items: flex-start; gap: 14px; background: #fff; border-radius: 10px; padding: 14px 18px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(16,33,82,0.06); }
+  .problem-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .problem-text { font-size: 13.5px; color: #3a4a6b; line-height: 1.5; }
+
+  /* ── SLIDE 3 SOLUTION ── */
+  #slide-3 { background: var(--deep-blue); align-items: center; justify-content: center; position: relative; }
+  #slide-3::before { content: ''; position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; background: var(--light-blue); opacity: 0.07; border-radius: 50%; }
+  .solution-center { text-align: center; z-index: 1; max-width: 900px; padding: 0 40px; }
+  .solution-headline { font-size: 54px; font-weight: 700; color: #fff; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; }
+  .solution-sub { font-size: 20px; color: rgba(255,255,255,0.6); letter-spacing: 0.15em; margin: 14px 0 48px; text-transform: uppercase; }
+  .pillar-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+  .pillar { border: 1px solid var(--light-blue); border-radius: 12px; padding: 28px 22px; background: rgba(15,114,206,0.08); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .pillar-icon { font-size: 32px; }
+  .pillar-name { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.08em; text-transform: uppercase; }
+  .pillar-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+  /* ── SLIDE 9 TWO COL ── */
+  .two-col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; height: 100%; }
+  .two-col-section { display: flex; flex-direction: column; gap: 14px; }
+  .two-col-section h3 { font-size: 16px; font-weight: 700; color: var(--deep-blue); letter-spacing: 0.06em; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid var(--light-blue); margin-bottom: 4px; }
+
+  /* ── SLIDE 10 TECH ── */
+  #slide-10 { background: var(--deep-blue); position: relative; }
+  #slide-10::before { content: ''; position: absolute; bottom: -60px; right: -60px; width: 350px; height: 350px; background: var(--light-blue); opacity: 0.06; border-radius: 50%; }
+  .tech-header { padding: 36px 60px 20px; flex-shrink: 0; }
+  .tech-title { font-size: 30px; font-weight: 700; color: #fff; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 16px; }
+  .tech-title::before { content: ''; display: inline-block; width: 4px; height: 36px; background: var(--light-blue); border-radius: 2px; }
+  .tech-cards { flex: 1; display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; padding: 0 60px 20px; align-items: start; }
+  .tech-card { border: 1px solid rgba(15,114,206,0.4); border-radius: 12px; padding: 26px 24px; background: rgba(15,114,206,0.07); }
+  .tech-card-title { font-size: 16px; font-weight: 700; color: var(--light-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid rgba(15,114,206,0.25); }
+  .tech-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 10px; line-height: 1.45; }
+  .tech-item::before { content: '→'; color: var(--light-blue); flex-shrink: 0; font-size: 11px; margin-top: 2px; }
+  .tech-footer { text-align: center; padding: 10px 60px 28px; font-size: 12px; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); text-transform: uppercase; flex-shrink: 0; }
+
+  /* ── SLIDE 11 THANK YOU ── */
+  #slide-11 { background: var(--deep-blue); align-items: center; justify-content: center; position: relative; }
+  #slide-11::before { content: ''; position: absolute; top: -80px; right: -80px; width: 400px; height: 400px; background: var(--light-blue); opacity: 0.07; border-radius: 50%; }
+  #slide-11::after  { content: ''; position: absolute; bottom: -60px; left: -60px; width: 280px; height: 280px; background: var(--green); opacity: 0.07; border-radius: 50%; }
+  .thankyou-content { text-align: center; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .thankyou-rule { width: 80px; height: 3px; background: var(--green); border-radius: 2px; }
+  .thankyou-text { font-size: 64px; font-weight: 700; color: #fff; letter-spacing: 0.04em; }
+  .thankyou-tagline { font-size: 15px; color: rgba(255,255,255,0.5); letter-spacing: 0.14em; text-transform: uppercase; }
+  .thankyou-contact { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.1em; margin-top: 12px; }
+
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<button class="nav-btn" id="prev" onclick="go(-1)">&#8592;</button>
+<button class="nav-btn" id="next" onclick="go(1)">&#8594;</button>
+<div id="counter">1 / 11</div>
+<div id="fs-hint">Press F for Fullscreen &nbsp;·&nbsp; Arrow keys to navigate</div>
+
+<div id="deck">
+
+  <!-- SLIDE 1 — HERO -->
+  <div class="slide active" id="slide-1">
+    <div class="hero-logo-area">
+      <img src="logo.png" alt="Barcotech" style="height:44px;width:auto;" onerror="this.style.display='none'">
+    </div>
+    <div class="hero-center">
+      <div class="hero-title">Fixed <span>Asset</span> Manager</div>
+      <div class="hero-accent-line"></div>
+      <div class="hero-subtitle">Barcotech Philippines, Inc.</div>
+      <div class="hero-tag">Built with Flutter &nbsp;·&nbsp; Powered by Supabase</div>
+    </div>
+    <div class="hero-hint">▶ &nbsp; Press Space or → to begin</div>
+  </div>
+
+  <!-- SLIDE 2 — CHALLENGE -->
+  <div class="slide slide-gray" id="slide-2">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">The Challenge</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="challenge-inner" style="width:100%">
+        <div>
+          <div class="challenge-headline">Managing physical assets across <em>multiple sites</em> is hard.</div>
+        </div>
+        <div class="problem-cards">
+          <div class="problem-card"><div class="problem-icon">⚠️</div><div class="problem-text"><strong>Spreadsheet chaos</strong> — tracking assets manually is error-prone, slow, and impossible to scale.</div></div>
+          <div class="problem-card"><div class="problem-icon">📍</div><div class="problem-text"><strong>Zero real-time visibility</strong> — no way to know where an asset is or what condition it's in right now.</div></div>
+          <div class="problem-card"><div class="problem-icon">🔄</div><div class="problem-text"><strong>No structured workflow</strong> — deploy and pull-out events are undocumented and inconsistent.</div></div>
+          <div class="problem-card"><div class="problem-icon">📋</div><div class="problem-text"><strong>Missing audit trail</strong> — when an asset changes hands, there's no record of who, when, or why.</div></div>
+          <div class="problem-card"><div class="problem-icon">📊</div><div class="problem-text"><strong>Reporting is painful</strong> — generating any report requires hours of manual data collection.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — SOLUTION -->
+  <div class="slide slide-dark" id="slide-3">
+    <div class="solution-center">
+      <div class="solution-headline">Fixed Asset Manager</div>
+      <div class="solution-sub">One system. Every asset. Any site.</div>
+      <div class="pillar-row">
+        <div class="pillar"><div class="pillar-icon">📦</div><div class="pillar-name">Track</div><div class="pillar-desc">Every asset registered with code, condition &amp; location — always up to date.</div></div>
+        <div class="pillar"><div class="pillar-icon">📡</div><div class="pillar-name">Sync</div><div class="pillar-desc">Real-time updates via Supabase. Offline-capable with local SQLite sync.</div></div>
+        <div class="pillar"><div class="pillar-icon">📊</div><div class="pillar-name">Report</div><div class="pillar-desc">PDF &amp; Excel exports in one click. No server needed — runs in Chrome.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 — DASHBOARD -->
+  <div class="slide slide-gray" id="slide-4">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Dashboard</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="browser-frame" style="width:55%;flex-shrink:0;">
+        <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">Fixed Asset Manager / Dashboard</div></div>
+        <div class="browser-content">
+          <img src="dashboard.png" alt="Dashboard" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>🖥️</div><div class=ph-label>Dashboard Screenshot</div><div class=ph-sub>dashboard.png not found</div></div>'">
+        </div>
+      </div>
+      <div class="feature-col" style="flex:1;">
+        <h3>Real-Time Asset Overview</h3>
+        <div class="feat"><div class="feat-dot"></div><div>4 live stat cards: <strong>Total Assets</strong>, <strong>Deployed</strong>, <strong>In Storage</strong>, <strong>Maintenance</strong></div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Donut chart — asset condition breakdown <span class="badge badge-good">Good</span> <span class="badge badge-fair">Fair</span> <span class="badge badge-damaged">Damaged</span></div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Quick action buttons: Add Asset, Scan Asset, View Reports</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Recent activity feed — every event logged in real time</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>One-click refresh synced with Supabase Realtime</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 — ASSET LIST -->
+  <div class="slide slide-gray" id="slide-5">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Asset List &amp; Management</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="browser-frame" style="width:55%;flex-shrink:0;">
+        <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">Fixed Asset Manager / Assets</div></div>
+        <div class="browser-content">
+          <img src="asset_list.png" alt="Asset List" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>📋</div><div class=ph-label>Asset List Screenshot</div><div class=ph-sub>asset_list.png not found</div></div>'">
+        </div>
+      </div>
+      <div class="feature-col" style="flex:1;">
+        <h3>Every Asset, Instantly Searchable</h3>
+        <div class="feat"><div class="feat-dot"></div><div>Filter by condition (<span class="badge badge-good">Good</span> <span class="badge badge-fair">Fair</span> <span class="badge badge-damaged">Damaged</span>) and status</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Full-text search across asset code, name, category, and brand</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Asset codes: <strong>ALF-</strong> Formwork · <strong>EQP-</strong> Equipment · <strong>SET-</strong> Sets</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Each row shows: code, name, condition badge, status badge, location</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Tap any row to open the full asset detail and history</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 — SCAN -->
+  <div class="slide slide-gray" id="slide-6">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Scan &amp; Asset Lookup</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="browser-frame" style="width:55%;flex-shrink:0;">
+        <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">Fixed Asset Manager / Scan</div></div>
+        <div class="browser-content">
+          <img src="scan.png" alt="Scan" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>📡</div><div class=ph-label>Scan Screenshot</div><div class=ph-sub>scan.png not found</div></div>'">
+        </div>
+      </div>
+      <div class="feature-col" style="flex:1;">
+        <h3>Find Any Asset Instantly</h3>
+        <div class="feat"><div class="feat-dot"></div><div>Type or scan an asset code — QR and barcode compatible</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Instant lookup returns: name, condition, status, and current location</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>From results: <strong>Deploy</strong> or <strong>Pull Out</strong> with one tap</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Works offline using local SQLite cache — no internet required in the field</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Designed for field users on Windows tablets or desktops</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — CONDITION -->
+  <div class="slide slide-gray" id="slide-7">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Condition Tagging on Deploy / Pull-Out</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="browser-frame" style="width:55%;flex-shrink:0;">
+        <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">Fixed Asset Manager / Condition Tag</div></div>
+        <div class="browser-content">
+          <img src="condition.png" alt="Condition" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>🏷️</div><div class=ph-label>Condition Screenshot</div><div class=ph-sub>condition.png not found</div></div>'">
+        </div>
+      </div>
+      <div class="feature-col" style="flex:1;">
+        <h3>Log Condition at Every Movement</h3>
+        <div class="feat"><div class="feat-dot"></div><div>Triggered on every Deploy or Pull-Out event — never skipped</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Select condition: <span class="badge badge-good">Good</span> &nbsp;<span class="badge badge-fair">Fair</span> &nbsp;<span class="badge badge-damaged">Damaged</span></div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Choose deployment site from the managed location list</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Add optional notes for context or damage details</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Every tag is timestamped and synced to Supabase automatically</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Builds a complete condition history per asset over its lifecycle</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — REPORTS -->
+  <div class="slide slide-gray" id="slide-8">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Reports &amp; Export</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="browser-frame" style="width:55%;flex-shrink:0;">
+        <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">Fixed Asset Manager / Reports</div></div>
+        <div class="browser-content">
+          <img src="reports.png" alt="Reports" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>📊</div><div class=ph-label>Reports Screenshot</div><div class=ph-sub>reports.png not found</div></div>'">
+        </div>
+      </div>
+      <div class="feature-col" style="flex:1;">
+        <h3>Export-Ready Reports in Seconds</h3>
+        <div class="feat"><div class="feat-dot"></div><div>Filter by condition and/or status before exporting</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Export to <strong>PDF</strong> — formatted A4 report with header and table</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Export to <strong>Excel</strong> — structured .xlsx with all asset fields</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Downloads triggered directly in Chrome — no server needed</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Import assets in bulk via Excel template upload</div></div>
+        <div class="feat"><div class="feat-dot"></div><div>Fields: code, name, type, condition, status, location, purchase date, value, serial no.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 — LOCATIONS & USERS -->
+  <div class="slide slide-gray" id="slide-9">
+    <div class="slide-header">
+      <div class="slide-header-left"><div class="header-bar"></div><div class="slide-title">Locations &amp; User Management</div></div>
+      <div class="header-wordmark">Barcotech Philippines, Inc.</div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col-equal" style="width:100%">
+        <div class="two-col-section">
+          <h3>📍 Locations</h3>
+          <div class="browser-frame" style="height:220px;">
+            <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">/ Locations</div></div>
+            <div class="browser-content">
+              <img src="location.png" alt="Locations" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>📍</div><div class=ph-label>Locations Screenshot</div><div class=ph-sub>location.png not found</div></div>'">
+            </div>
+          </div>
+          <div class="feat"><div class="feat-dot"></div><div>Manage deployment sites and storage locations</div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Each location has a name and optional description</div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Assets are linked to a location on every deploy event</div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Real-time sync across all connected users</div></div>
+        </div>
+        <div class="two-col-section">
+          <h3>👥 Users</h3>
+          <div class="browser-frame" style="height:220px;">
+            <div class="browser-bar"><div class="browser-dot dot-red"></div><div class="browser-dot dot-yellow"></div><div class="browser-dot dot-green"></div><div class="browser-url">/ Users</div></div>
+            <div class="browser-content">
+              <img src="user.png" alt="Users" onerror="this.outerHTML='<div class=img-placeholder><div class=ph-icon>👥</div><div class=ph-label>Users Screenshot</div><div class=ph-sub>user.png not found</div></div>'">
+            </div>
+          </div>
+          <div class="feat"><div class="feat-dot"></div><div>Two roles: <strong>Admin</strong> and <strong>Field User</strong></div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Admins: full access including user management &amp; reports</div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Field Users: scan, deploy, pull-out, and condition tag</div></div>
+          <div class="feat"><div class="feat-dot"></div><div>Authentication powered by Supabase Auth</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10 — TECH -->
+  <div class="slide slide-dark" id="slide-10">
+    <div class="tech-header"><div class="tech-title">Under the Hood</div></div>
+    <div class="tech-cards">
+      <div class="tech-card">
+        <div class="tech-card-title">🖥️ Frontend</div>
+        <div class="tech-item">Flutter Web (Dart)</div>
+        <div class="tech-item">Riverpod state management</div>
+        <div class="tech-item">GoRouter navigation</div>
+        <div class="tech-item">flutter_screenutil — 1440×900 design base</div>
+        <div class="tech-item">Material 3 design system</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-title">⚙️ Backend</div>
+        <div class="tech-item">Supabase (PostgreSQL)</div>
+        <div class="tech-item">Realtime subscriptions</div>
+        <div class="tech-item">Supabase Auth (role-based)</div>
+        <div class="tech-item">Local SQLite (drift) for offline mode</div>
+        <div class="tech-item">30-second background sync interval</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-title">📤 Output &amp; Integration</div>
+        <div class="tech-item">PDF export (pdf package)</div>
+        <div class="tech-item">Excel export &amp; import (excel package)</div>
+        <div class="tech-item">QR / barcode lookup</div>
+        <div class="tech-item">Browser-native file download (dart:html)</div>
+      </div>
+    </div>
+    <div class="tech-footer">Designed for Windows Desktop Browsers &nbsp;·&nbsp; Chrome &nbsp;·&nbsp; Edge</div>
+  </div>
+
+  <!-- SLIDE 11 — THANK YOU -->
+  <div class="slide slide-dark" id="slide-11">
+    <div class="thankyou-content">
+      <img src="logo.png" alt="Barcotech" style="height:80px;width:auto;" onerror="this.style.display='none'">
+      <div class="thankyou-rule"></div>
+      <div class="thankyou-text">Thank you.</div>
+      <div class="thankyou-tagline">Smart Asset Management. Powered by Barcotech.</div>
+      <div class="thankyou-contact">www.barcotech.com.ph &nbsp;·&nbsp; info@barcotech.com.ph</div>
+    </div>
+  </div>
+
+</div><!-- #deck -->
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let current  = 0;
+
+  function go(dir) {
+    const next = current + dir;
+    if (next < 0 || next >= total) return;
+
+    slides[current].classList.remove('active');
+    slides[next].classList.add('active');
+    current = next;
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft')                    { e.preventDefault(); go(-1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+</script>
+</body>
+</html>
